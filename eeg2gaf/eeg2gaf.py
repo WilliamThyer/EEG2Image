@@ -21,6 +21,10 @@ class Experiment:
         if info_from_file:
             self.info = self.load_info(0)
             self.info.pop('unique_id')
+            self.t = self.info['times']
+            self.chan_x = self.info['chan_x']
+            self.chan_y = self.info['chan_y']
+            self.chan_labels = self.info['chan_labels']
             
     def load_eeg(self,isub):
         subj_mat = sio.loadmat(self.xdata_files[isub],variable_names=['xdata'])
@@ -42,11 +46,36 @@ class Experiment:
         
         return info
 
+    def moving_average(self, x, w):
+        xnew = np.convolve(x, np.ones(w), 'same') / w
+        return xnew[0:-4:5] ## very much hardcoded
+    
+    def prep_eeg(self, xdata):
+        
+        #chan regions
+        upper = self.chan_y>0
+        lower = self.chan_y<0
+        right = self.chan_x>0
+        left = self.chan_x<0
+        region_idx = [upper&right,upper&left,lower&right,lower&left]
+
+        # preallocating
+        xregion = np.ones((xdata.shape[0],len(region_idx),xdata.shape[2]))
+        newlen = self.moving_average(xdata[0,0,:],5).shape[0]
+        xdata_new = np.ones((xdata.shape[0],len(region_idx),newlen))
+
+        for ir,r in enumerate(region_idx):
+            xregion[:,ir,:] = np.mean(xdata[:,r,:],1)
+            for it in range(xdata_new.shape[0]):
+                xdata_new[it,ir,:] = self.moving_average(xregion[it,ir,:],5)
+
+
+
 class gaf:
     def init(self):
         pass
 
-    def create_time_serie(self, size, time):
+    def _create_time_serie(self, size, time):
         """Generate a time serie of length size and dynamic with respect to time."""
         # Generating time-series
         support = np.arange(0, size)
@@ -84,7 +113,7 @@ class gaf:
         
         if serie is None:
             print("No time serie provided, using generated data!")
-            serie = self.create_time_serie(45, 0)
+            serie = self._create_time_serie(45, 0)
 
         #transform and plot serie
         gaf, _ = self.transform(serie)
@@ -94,5 +123,4 @@ class gaf:
             plt.matshow(gaf,cmap=cmap)
         plt.axis('off')
 
-    def moving_average(self, x, w):
-        return np.convolve(x, np.ones(w), 'same') / w
+    
