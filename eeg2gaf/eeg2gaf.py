@@ -22,9 +22,10 @@ class Experiment:
             self.info = self.load_info(0)
             self.info.pop('unique_id')
             self.t = self.info['times']
-            self.chan_x = self.info['chan_x']
-            self.chan_y = self.info['chan_y']
+            self.chan_x = np.array([element * -1 for element in self.info['chan_y']])
+            self.chan_y = self.info['chan_x']
             self.chan_labels = self.info['chan_labels']
+
             
     def load_eeg(self,isub):
         subj_mat = sio.loadmat(self.xdata_files[isub],variable_names=['xdata'])
@@ -53,11 +54,11 @@ class Experiment:
     def prep_eeg(self, xdata):
         
         #chan regions
-        upper = self.chan_y>0
-        lower = self.chan_y<0
-        right = self.chan_x>0
-        left = self.chan_x<0
-        region_idx = [upper&right,upper&left,lower&right,lower&left]
+        upper = self.chan_x>0
+        lower = self.chan_x<0
+        left = self.chan_y>0
+        right = self.chan_y<0
+        region_idx = [upper&left,upper&right,lower&left,lower&right]
 
         # preallocating
         xregion = np.ones((xdata.shape[0],len(region_idx),xdata.shape[2]))
@@ -120,7 +121,7 @@ class Gaffer:
 
         return gaf
 
-    def trial2gaf(self,trial,itrial,ss,sub,gen_name=True):
+    def trial2gaf(self,trial,itrial=None,ss=None,sub=None,show=False):
         gaf0 = self.uni2gaf(trial[0])
         gaf1 = self.uni2gaf(trial[2])
         gaf2 = self.uni2gaf(trial[1])
@@ -138,14 +139,14 @@ class Gaffer:
         for ax in axs.flat:
             ax.set_axis_off()
 
-        if gen_name is True:
+        if show is True:
+            plt.show()
+        else:
             name = str(sub)+'_'+str(itrial)+'.png'
-        else: name = 'test.png'
-        out = self.output/str(ss)/name
+            out = self.output/str(ss)/name
+            plt.savefig(out,dpi=96)
 
-        plt.savefig(out,dpi=96)
-
-        plt.close(fig)
+            plt.close(fig)
 
         
 
