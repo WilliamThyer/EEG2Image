@@ -66,14 +66,14 @@ class Experiment:
 
         for ir,r in enumerate(region_idx):
             xregion[:,ir,:] = np.mean(xdata[:,r,:],1)
-            for it in range(xdata_new.shape[0]):
+            for it in range(xdata.shape[0]):
                 xdata_new[it,ir,:] = self.moving_average(xregion[it,ir,:],5)
+        
+        return xdata_new
 
-
-
-class gaf:
-    def init(self):
-        pass
+class Gaffer:
+    def __init__(self,output):
+        self.output = Path(output)
 
     def _create_time_serie(self, size, time):
         """Generate a time serie of length size and dynamic with respect to time."""
@@ -117,10 +117,36 @@ class gaf:
 
         #transform and plot serie
         gaf, _ = self.transform(serie)
-        if cmap is None:
-            plt.matshow(gaf)
-        else:
-            plt.matshow(gaf,cmap=cmap)
-        plt.axis('off')
+
+        return gaf
+
+    def trial2gaf(self,trial,itrial,ss,sub,gen_name=True):
+        gaf0 = self.uni2gaf(trial[0])
+        gaf1 = self.uni2gaf(trial[2])
+        gaf2 = self.uni2gaf(trial[1])
+        gaf3 = self.uni2gaf(trial[3])
+        
+        fig, axs = plt.subplots(2, 2, sharex='col', sharey='row',
+                            gridspec_kw={'hspace': 0, 'wspace': -.1})
+        fig.set_size_inches(224/96,224/96)
+        (ax1, ax2), (ax3, ax4) = axs
+
+        ax1.matshow(gaf0)
+        ax2.matshow(gaf1)
+        ax3.matshow(gaf2)
+        ax4.matshow(gaf3)
+        for ax in axs.flat:
+            ax.set_axis_off()
+
+        if gen_name is True:
+            name = str(sub)+'_'+str(itrial)+'.png'
+        else: name = 'test.png'
+        out = self.output/str(ss)/name
+
+        plt.savefig(out,dpi=96)
+
+        plt.close(fig)
+
+        
 
     
